@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.types.typeUtil.isUnit
 
 /**
  * Disallows shadowing variable declarations.
@@ -86,7 +87,7 @@ class NoNameShadowing(config: Config = Config.empty) : Rule(config) {
         if (bindingContext == BindingContext.EMPTY) return
         val implicitParameter = lambdaExpression.implicitParameter(bindingContext) ?: return
         if (lambdaExpression.hasImplicitParameterReference(implicitParameter, bindingContext) &&
-            lambdaExpression.hasParentImplicitParameterLambda()
+            lambdaExpression.hasParentImplicitParameterLambdaWithoutUnit()
         ) {
             report(
                 CodeSmell(
@@ -98,6 +99,8 @@ class NoNameShadowing(config: Config = Config.empty) : Rule(config) {
         }
     }
 
-    private fun KtLambdaExpression.hasParentImplicitParameterLambda(): Boolean =
-        getStrictParentOfType<KtLambdaExpression>()?.implicitParameter(bindingContext) != null
+    private fun KtLambdaExpression.hasParentImplicitParameterLambdaWithoutUnit(): Boolean {
+        val parameter = getStrictParentOfType<KtLambdaExpression>()?.implicitParameter(bindingContext) ?: return false
+        return !parameter.type.isUnit()
+    }
 }

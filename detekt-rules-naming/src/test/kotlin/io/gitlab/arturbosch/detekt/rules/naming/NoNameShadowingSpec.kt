@@ -114,4 +114,23 @@ class NoNameShadowingSpec(val env: KotlinCoreEnvironment) {
             assertThat(findings).isEmpty()
         }
     }
+
+    @Nested
+    inner class `NoNameShadowing regression test` {
+        @Test
+        fun `issue 4692 does not report when lambda implicit 'it' parameter is defined as Unit`() {
+            val code = """
+                fun String.test(a: String.(Unit) -> Unit)  = Unit 
+
+                fun test() {
+                    "".test { // it is Unit and unused
+                        chars().forEach { print(it) } // Name shadowed: implicit lambda parameter 'it' [NoNameShadowing]
+                    }
+                }
+
+            """
+            val findings = subject.compileAndLintWithContext(env, code)
+            assertThat(findings).isEmpty()
+        }
+    }
 }
